@@ -16,14 +16,37 @@
 from pathlib import Path
 import csv
 import os
+import tempfile
+import shutil
 # import os.path
 # from os import path
 import pandas as pd
+# TODO: Rework teh whole document with more documentation and possibly restructured code if Patrick allows
+
+# Copies the target file as a temporary file to a temporary directory
+def copyTargetToTemp(inputfile):
+    tempDir = tempfile.TemporaryDirectory()
+    tempDirPath = tempDir.name
+    fileName = os.path.basename(inputfile)
+    tempFilePath = os.path.join(tempDirPath, fileName)
+    shutil.copy2(inputfile, tempFilePath)
+
+    return tempDir, tempFilePath
+    
+
+# Remove temporary directory and file
+def  cleanup(tempDir, tempFile):
+    tempDir.cleanup()    
+
 
 # Declare variables using Path from patlib
 inputfile=Path.home() / "OneDrive - Mike's Auto Parts" / 'Share' / 'Titan Duplicate LT Passenger Crossover Sizes.xlsx'
+# inputfile='Doc/Titan Duplicate LT Passenger Crossover Sizes.xlsx'
+
 inputsheet='Sheet1'
+
 outputfile=Path.home() / 'Downloads' / 'Titan Fitment.tsv'
+# outputfile='Doc/test.tsv'
 
 # Declare list of columns to specify formats from file to import
 my_columns={
@@ -50,9 +73,10 @@ my_columns={
 # This doesn't work if the file is already opened by Excel
 if os.path.exists(inputfile):
     try:
-        os.rename(inputfile, inputfile)
+        # os.rename(inputfile, inputfile)
         # print('File ' + str(inputfile) + ' Exists!')
-        data = pd.read_excel(inputfile, sheet_name=inputsheet, converters=my_columns) # Read Excel file into python data frame
+        tempDir, tempFile = copyTargetToTemp(inputfile)
+        data = pd.read_excel(tempFile, sheet_name=inputsheet, converters=my_columns) # Read Excel file into python data frame
     except OSError as e:
         print('File Exists and Alredy OPEN by someone else')
 else:
@@ -69,7 +93,7 @@ def name(word):
 
 # Spin through rows, then columns
 row_list = []
-for i in range(1,len(data.index)):
+for i in range(1, len(data.index)):
     for j in range(1, len(data.columns)-1):
         if not isNaN(data.iloc[i,j]):
             row_list.append({'TireSize': data.iloc[i,0], 'Part': data.iloc[i,j], 'Tread': name(data.columns[j])})
@@ -83,6 +107,9 @@ my_list = data_output.columns # or use my_list = ['Tire Size', 'Part', 'Tread']
 # Write data frame by selected columns to csv file
 # data.to_csv(outputfile, encoding='utf-8', escapechar='\\', float_format='%.2f', index=False, columns = my_list, quoting=csv.QUOTE_NONE, sep='\t') # Create csv file for SQL Server to import
 data_output.to_csv(outputfile, encoding='utf-8', escapechar='\\', index=False, quoting=csv.QUOTE_NONE, sep='\t' , columns = my_list)
+
+# Remove temporary file and directory created in the script
+cleanup(tempDir, tempFile)
 '''
     columns = my_list      - Only save selected columns from my_list
     encoding='utf-8'       - Use utf encoding
