@@ -10,6 +10,7 @@
     
     Author: Patrick M Mahoney
     Date 2020 October 11
+    Version: 1.1
 '''
 
 # Need python version 3.4 or higher for pathlib
